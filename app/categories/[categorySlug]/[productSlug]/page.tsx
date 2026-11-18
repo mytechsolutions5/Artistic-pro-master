@@ -211,7 +211,7 @@ export default async function ProductPage({ params }: Props) {
               <meta key={img} itemProp="image" content={img} />
             ))}
             <meta itemProp="brand" content="Lurevi" />
-            
+
             {/* Rich evocative description for indexing */}
             <div itemProp="description">
               <p>

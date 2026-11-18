@@ -340,6 +340,27 @@ select:hover:not(:focus) {
   border-color: #9ca3af !important;
 }
 
+/* Status pill select in admin order management */
+select.status-pill-select {
+  background-image: none !important;
+  background-position: 0 0 !important;
+  background-repeat: no-repeat !important;
+  padding-right: 1.85rem !important;
+  padding-left: 1.625rem !important;
+  outline: none !important;
+  outline-offset: 0 !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+select.status-pill-select:focus,
+select.status-pill-select:focus-visible,
+select.status-pill-select:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* Button styles */
 .btn-primary {
   @apply bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:from-pink-600 hover:to-purple-600 transition-all duration-200 font-semibold;

@@ -117,6 +117,7 @@ const ArtCard: React.FC<ArtCardProps> = ({ artwork, size = 'medium' }) => {
           <button className="p-2 bg-white/90 hover:bg-white rounded-full shadow-md backdrop-blur-sm">
             <Heart className="w-5 h-5 text-gray-600 hover:text-pink-500 transition-colors" />
           </button>
+        </div>
         {/* Hover Content Overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md transform translate-y-0 opacity-100 sm:translate-y-full sm:group-hover:translate-y-0 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300 ease-in-out border-t border-gray-100/50 shadow-md z-10">
           <h3 className="font-semibold text-gray-800 mb-1 group-hover:text-pink-600 transition-colors line-clamp-1">

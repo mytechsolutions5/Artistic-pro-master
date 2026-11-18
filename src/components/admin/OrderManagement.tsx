@@ -14,6 +14,13 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Wallet,
+  CreditCard,
+  Banknote,
 } from 'lucide-react';
 import { orderService, Order, OrderStats } from '../../services/orderService';
 import { useCurrency } from '../../contexts/CurrencyContext';
@@ -45,6 +52,49 @@ const OrderItemThumb: React.FC<{
   );
 };
 
+const normalizePaymentMethod = (method?: string | null): 'cod' | 'razorpay' | 'wallet' | 'other' => {
+  if (!method) return 'other';
+  const m = method.toLowerCase().trim();
+  if (m === 'cod' || m.includes('cash') || m === 'cash_on_delivery') return 'cod';
+  if (m === 'razorpay' || m.includes('razor')) return 'razorpay';
+  if (m === 'wallet' || m === 'store_credit' || m.includes('credit') || m.includes('wallet')) return 'wallet';
+  return 'other';
+};
+
+const getPaymentBadge = (method?: string | null) => {
+  const norm = normalizePaymentMethod(method);
+  switch (norm) {
+    case 'cod':
+      return (
+        <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 ring-1 ring-inset ring-amber-600/20">
+          <Banknote className="h-3 w-3 text-amber-600 shrink-0" />
+          <span>COD</span>
+        </span>
+      );
+    case 'razorpay':
+      return (
+        <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-800 ring-1 ring-inset ring-blue-600/20">
+          <CreditCard className="h-3 w-3 text-blue-600 shrink-0" />
+          <span>Razorpay</span>
+        </span>
+      );
+    case 'wallet':
+      return (
+        <span className="inline-flex items-center gap-1 rounded-md bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-800 ring-1 ring-inset ring-purple-600/20">
+          <Wallet className="h-3 w-3 text-purple-600 shrink-0" />
+          <span>Wallet</span>
+        </span>
+      );
+    default:
+      return (
+        <span className="inline-flex items-center gap-1 rounded-md bg-gray-50 px-2 py-0.5 text-[11px] font-medium capitalize text-gray-700 ring-1 ring-inset ring-gray-400/20">
+          <CreditCard className="h-3 w-3 text-gray-500 shrink-0" />
+          <span>{method || 'Prepaid'}</span>
+        </span>
+      );
+  }
+};
+
 const OrderManagement: React.FC<OrderManagementProps> = ({ isFBOnly = false }) => {
   const { formatCurrency, currencySettings, convertAmount } = useCurrency();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -63,11 +113,14 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ isFBOnly = false }) =
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterPayment, setFilterPayment] = useState('all');
   const [filterDate, setFilterDate] = useState('all');
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [sequenceMap, setSequenceMap] = useState<Record<string, number>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const loadOrders = async () => {
     try {
@@ -194,9 +247,18 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ isFBOnly = false }) =
         order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.customer_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        realOrderNumber.toLowerCase().includes(searchTerm.toLowerCase());
+        realOrderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.payment_method && order.payment_method.toLowerCase().includes(searchTerm.toLowerCase()));
 
       const matchesStatus = filterStatus === 'all' || order.status === filterStatus;
+
+      const normPayment = normalizePaymentMethod(order.payment_method);
+      const matchesPayment =
+        filterPayment === 'all' ||
+        (filterPayment === 'cod' && normPayment === 'cod') ||
+        (filterPayment === 'razorpay' && normPayment === 'razorpay') ||
+        (filterPayment === 'wallet' && normPayment === 'wallet') ||
+        (filterPayment === 'other' && normPayment === 'other');
 
       let matchesDate = true;
       if (filterDate !== 'all') {
@@ -220,7 +282,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ isFBOnly = false }) =
         }
       }
 
-      return matchesSearch && matchesStatus && matchesDate;
+      return matchesSearch && matchesStatus && matchesPayment && matchesDate;
     })
     .sort((a, b) => {
       let aValue: string | number;
@@ -234,6 +296,9 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ isFBOnly = false }) =
       } else if (sortBy === 'status') {
         aValue = a.status || '';
         bValue = b.status || '';
+      } else if (sortBy === 'payment_method') {
+        aValue = a.payment_method || '';
+        bValue = b.payment_method || '';
       } else {
         aValue = a[sortBy as keyof Order] as string | number;
         bValue = b[sortBy as keyof Order] as string | number;
@@ -249,6 +314,36 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ isFBOnly = false }) =
       }
       return aValue < bValue ? 1 : -1;
     });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, filterPayment, filterDate, sortBy, sortOrder]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, filteredOrders.length);
+  const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  const getPageNumbers = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages: (number | string)[] = [];
+    if (currentPage <= 4) {
+      pages.push(1, 2, 3, 4, 5, '...', totalPages);
+    } else if (currentPage >= totalPages - 3) {
+      pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+    } else {
+      pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+    }
+    return pages;
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -267,26 +362,47 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ isFBOnly = false }) =
     }
   };
 
+  const getStatusSelectColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-50 text-green-800 !border-green-300 hover:bg-green-100/80 focus:!border-green-400 focus:!ring-2 focus:!ring-green-400/30';
+      case 'processing':
+        return 'bg-blue-50 text-blue-800 !border-blue-300 hover:bg-blue-100/80 focus:!border-blue-400 focus:!ring-2 focus:!ring-blue-400/30';
+      case 'pending':
+        return 'bg-amber-50 text-amber-800 !border-amber-300 hover:bg-amber-100/80 focus:!border-amber-400 focus:!ring-2 focus:!ring-amber-400/30';
+      case 'cancelled':
+        return 'bg-red-50 text-red-800 !border-red-300 hover:bg-red-100/80 focus:!border-red-400 focus:!ring-2 focus:!ring-red-400/30';
+      case 'refunded':
+        return 'bg-gray-100 text-gray-700 !border-gray-300 hover:bg-gray-200/80 focus:!border-gray-400 focus:!ring-2 focus:!ring-gray-400/30';
+      default:
+        return 'bg-gray-50 text-gray-700 !border-gray-300 hover:bg-gray-100 focus:!border-gray-400 focus:!ring-2 focus:!ring-gray-400/30';
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     const cls = 'w-3 h-3 shrink-0';
     switch (status) {
       case 'completed':
-        return <CheckCircle className={cls} />;
+        return <CheckCircle className={`${cls} text-green-600`} />;
       case 'processing':
-        return <Clock className={cls} />;
+        return <Clock className={`${cls} text-blue-600`} />;
       case 'pending':
-        return <Clock className={cls} />;
+        return <Clock className={`${cls} text-amber-600`} />;
       case 'cancelled':
-        return <XCircle className={cls} />;
+        return <XCircle className={`${cls} text-red-600`} />;
       case 'refunded':
-        return <AlertCircle className={cls} />;
+        return <AlertCircle className={`${cls} text-gray-600`} />;
       default:
-        return <Clock className={cls} />;
+        return <Clock className={`${cls} text-gray-600`} />;
     }
   };
 
   const inputCls =
     'h-8 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900';
+
+  const codCount = orders.filter((o) => normalizePaymentMethod(o.payment_method) === 'cod').length;
+  const razorpayCount = orders.filter((o) => normalizePaymentMethod(o.payment_method) === 'razorpay').length;
+  const walletCount = orders.filter((o) => normalizePaymentMethod(o.payment_method) === 'wallet').length;
 
   const statItems: {
     label: string;
@@ -295,6 +411,9 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ isFBOnly = false }) =
     iconClass?: string;
   }[] = [
     { label: 'Total', value: stats.total, Icon: Package, iconClass: 'text-blue-600' },
+    { label: 'COD', value: codCount, Icon: Banknote, iconClass: 'text-amber-600' },
+    { label: 'Razorpay', value: razorpayCount, Icon: CreditCard, iconClass: 'text-blue-600' },
+    { label: 'Wallet', value: walletCount, Icon: Wallet, iconClass: 'text-purple-600' },
     { label: 'Pending', value: stats.pending, Icon: Clock, iconClass: 'text-amber-600' },
     { label: 'Processing', value: stats.processing, Icon: Clock, iconClass: 'text-blue-600' },
     { label: 'Done', value: stats.completed, Icon: CheckCircle, iconClass: 'text-green-600' },
@@ -322,22 +441,13 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ isFBOnly = false }) =
           <h2 className="text-lg font-semibold text-gray-900">Order Management</h2>
           <p className="text-xs text-gray-500">Orders and payments</p>
         </div>
-        <button
-          type="button"
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 text-xs font-medium text-gray-800 hover:bg-gray-50 disabled:opacity-50"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 bg-gray-50/80 p-2">
-        {statItems.map(({ label, value, Icon, iconClass }) => (
+      <div className="flex items-center gap-1.5 overflow-x-auto rounded-lg border border-gray-200 bg-gray-50/80 p-2 scrollbar-hide">
+        {statItems.map(({ label, value, Icon, iconClass }, idx) => (
           <div
-            key={label}
-            className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1"
+            key={`${label}-${idx}`}
+            className="inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1 shadow-sm"
           >
             {Icon && (
               <Icon className={`h-3.5 w-3.5 shrink-0 ${iconClass || 'text-gray-500'}`} />
@@ -372,6 +482,17 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ isFBOnly = false }) =
           <option value="refunded">Refunded</option>
         </select>
         <select
+          value={filterPayment}
+          onChange={(e) => setFilterPayment(e.target.value)}
+          className={`${inputCls} min-w-[7.5rem]`}
+        >
+          <option value="all">All payments</option>
+          <option value="cod">COD</option>
+          <option value="razorpay">Razorpay</option>
+          <option value="wallet">Wallet</option>
+          <option value="other">Other</option>
+        </select>
+        <select
           value={filterDate}
           onChange={(e) => setFilterDate(e.target.value)}
           className={`${inputCls} min-w-[6.5rem]`}
@@ -396,6 +517,8 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ isFBOnly = false }) =
           <option value="total_amount-asc">Amount ↑</option>
           <option value="customer_name-asc">Customer A–Z</option>
           <option value="customer_name-desc">Customer Z–A</option>
+          <option value="payment_method-asc">Payment A–Z</option>
+          <option value="payment_method-desc">Payment Z–A</option>
         </select>
       </div>
 
@@ -411,157 +534,189 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ isFBOnly = false }) =
           <p className="text-xs text-gray-500">Adjust search or filters</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-gray-200 text-left text-xs">
-            <thead className="bg-gray-50 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-              <tr>
-                <th
-                  onClick={() => handleSort('order_id')}
-                  className="cursor-pointer select-none px-4 py-3 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-                >
-                  <div className="flex items-center gap-1">
-                    <span>Order ID</span>
-                    {sortBy === 'order_id' && (
-                      <span>{sortOrder === 'asc' ? '▲' : '▼'}</span>
-                    )}
-                  </div>
-                </th>
-                <th
-                  onClick={() => handleSort('customer_name')}
-                  className="cursor-pointer select-none px-4 py-3 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-                >
-                  <div className="flex items-center gap-1">
-                    <span>Customer</span>
-                    {sortBy === 'customer_name' && (
-                      <span>{sortOrder === 'asc' ? '▲' : '▼'}</span>
-                    )}
-                  </div>
-                </th>
-                <th
-                  onClick={() => handleSort('created_at')}
-                  className="cursor-pointer select-none px-4 py-3 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-                >
-                  <div className="flex items-center gap-1">
-                    <span>Date</span>
-                    {sortBy === 'created_at' && (
-                      <span>{sortOrder === 'asc' ? '▲' : '▼'}</span>
-                    )}
-                  </div>
-                </th>
-                <th
-                  onClick={() => handleSort('status')}
-                  className="cursor-pointer select-none px-4 py-3 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-                >
-                  <div className="flex items-center gap-1">
-                    <span>Status</span>
-                    {sortBy === 'status' && (
-                      <span>{sortOrder === 'asc' ? '▲' : '▼'}</span>
-                    )}
-                  </div>
-                </th>
-                <th
-                  onClick={() => handleSort('total_amount')}
-                  className="cursor-pointer select-none px-4 py-3 text-right hover:bg-gray-100 hover:text-gray-900 transition-colors"
-                >
-                  <div className="flex items-center justify-end gap-1">
-                    <span>Total</span>
-                    {sortBy === 'total_amount' && (
-                      <span>{sortOrder === 'asc' ? '▲' : '▼'}</span>
-                    )}
-                  </div>
-                </th>
-                <th className="px-4 py-3">Update Status</th>
-                <th className="w-10 px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {filteredOrders.map((order) => {
-                const seq = sequenceMap[order.id] || 1;
-                const realOrderNumber = formatOrderNumber(order.created_at, seq);
-                const displayId = realOrderNumber;
-                const initials = order.customer_name
-                  .split(' ')
-                  .map((n: string) => n[0])
-                  .join('')
-                  .toUpperCase()
-                  .slice(0, 2);
-                const isExpanded = expandedOrders.has(order.id);
+        <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 text-left text-xs">
+              <thead className="bg-gray-50 text-[11px] font-semibold uppercase tracking-wider text-gray-500 border-b border-gray-200">
+                <tr>
+                  <th
+                    onClick={() => handleSort('order_id')}
+                    className="cursor-pointer select-none px-4 py-3 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Order ID</span>
+                      {sortBy === 'order_id' && (
+                        <span className="text-[10px]">{sortOrder === 'asc' ? '▲' : '▼'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort('customer_name')}
+                    className="cursor-pointer select-none px-4 py-3 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Customer</span>
+                      {sortBy === 'customer_name' && (
+                        <span className="text-[10px]">{sortOrder === 'asc' ? '▲' : '▼'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort('created_at')}
+                    className="cursor-pointer select-none px-4 py-3 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Date</span>
+                      {sortBy === 'created_at' && (
+                        <span className="text-[10px]">{sortOrder === 'asc' ? '▲' : '▼'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort('status')}
+                    className="cursor-pointer select-none px-4 py-3 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Status</span>
+                      {sortBy === 'status' && (
+                        <span className="text-[10px]">{sortOrder === 'asc' ? '▲' : '▼'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort('payment_method')}
+                    className="cursor-pointer select-none px-4 py-3 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Payment</span>
+                      {sortBy === 'payment_method' && (
+                        <span className="text-[10px]">{sortOrder === 'asc' ? '▲' : '▼'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort('total_amount')}
+                    className="cursor-pointer select-none px-4 py-3 text-right hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <span>Total</span>
+                      {sortBy === 'total_amount' && (
+                        <span className="text-[10px]">{sortOrder === 'asc' ? '▲' : '▼'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-right">Details</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {paginatedOrders.map((order) => {
+                  const seq = sequenceMap[order.id] || 1;
+                  const realOrderNumber = formatOrderNumber(order.created_at, seq);
+                  const displayId = realOrderNumber;
+                  const initials = order.customer_name
+                    .split(' ')
+                    .map((n: string) => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2);
+                  const isExpanded = expandedOrders.has(order.id);
 
-                return (
-                  <React.Fragment key={order.id}>
-                    <tr
-                      role="button"
-                      tabIndex={0}
-                      className="cursor-pointer hover:bg-gray-50 align-middle"
-                      onClick={() => toggleOrderExpansion(order.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          toggleOrderExpansion(order.id);
-                        }
-                      }}
-                    >
-                      <td className="whitespace-nowrap px-4 py-3 font-mono font-semibold text-gray-900" title={`UUID: ${order.id}`}>
-                        #{displayId}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-200 text-[10px] font-bold text-gray-700">
-                            {initials}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="truncate font-medium text-gray-900">{order.customer_name}</p>
-                            <p className="truncate font-mono text-[10px] text-gray-400">
-                              {order.customer_email}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-gray-500">
-                        {new Date(order.created_at).toLocaleDateString(undefined, {
-                          month: 'short',
-                          day: 'numeric',
-                          year: '2-digit',
-                        })}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3">
-                        <span
-                          className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium capitalize ${getStatusColor(order.status)}`}
-                        >
-                          {getStatusIcon(order.status)}
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums text-gray-900">
-                        {formatCurrency(order.total_amount, order.currency_code || 'INR')}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                        <select
-                          value={order.status}
-                          onChange={(e) =>
-                            handleUpdateStatus(order.id, e.target.value as Order['status'])
+                  return (
+                    <React.Fragment key={order.id}>
+                      <tr
+                        role="button"
+                        tabIndex={0}
+                        className="cursor-pointer hover:bg-gray-50/80 transition-colors align-middle"
+                        onClick={() => toggleOrderExpansion(order.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleOrderExpansion(order.id);
                           }
-                          className={`${inputCls} max-w-[7rem]`}
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="processing">Processing</option>
-                          <option value="completed">Completed</option>
-                          <option value="cancelled">Cancelled</option>
-                          <option value="refunded">Refunded</option>
-                        </select>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-right text-gray-400">
-                        {isExpanded ? (
-                          <ChevronUp className="h-4 w-4 inline-block" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4 inline-block" />
-                        )}
-                      </td>
-                    </tr>
+                        }}
+                      >
+                        <td className="whitespace-nowrap px-4 py-3 font-mono font-semibold text-gray-900" title={`UUID: ${order.id}`}>
+                          #{displayId}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gray-100 text-[10px] font-bold text-gray-700 ring-1 ring-inset ring-gray-200">
+                              {initials}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate font-medium text-gray-900">{order.customer_name}</p>
+                              <p className="truncate font-mono text-[10px] text-gray-400">
+                                {order.customer_email}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-gray-500">
+                          {new Date(order.created_at).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            year: '2-digit',
+                          })}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                          <div className="relative inline-flex items-center">
+                            <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 flex items-center z-10 text-xs">
+                              {getStatusIcon(order.status)}
+                            </span>
+                            <select
+                              value={order.status}
+                              onChange={(e) =>
+                                handleUpdateStatus(order.id, e.target.value as Order['status'])
+                              }
+                              style={{
+                                backgroundImage: 'none',
+                                outline: 'none',
+                                WebkitAppearance: 'none',
+                                MozAppearance: 'none',
+                              }}
+                              className={`status-pill-select h-7 cursor-pointer appearance-none rounded-full text-[11px] font-medium capitalize border transition-all ${getStatusSelectColor(order.status)}`}
+                              title="Click to update status"
+                            >
+                              <option value="pending" className="bg-white text-gray-900 font-normal">Pending</option>
+                              <option value="processing" className="bg-white text-gray-900 font-normal">Processing</option>
+                              <option value="completed" className="bg-white text-gray-900 font-normal">Completed</option>
+                              <option value="cancelled" className="bg-white text-gray-900 font-normal">Cancelled</option>
+                              <option value="refunded" className="bg-white text-gray-900 font-normal">Refunded</option>
+                            </select>
+                            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 opacity-50 z-10" />
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3">
+                          {getPaymentBadge(order.payment_method)}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums text-gray-900">
+                          {formatCurrency(order.total_amount, order.currency_code || 'INR')}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-right">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleOrderExpansion(order.id);
+                            }}
+                            className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
+                              isExpanded ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                            }`}
+                            title={isExpanded ? 'Hide order details' : 'View order details'}
+                          >
+                            <span>{isExpanded ? 'Hide' : 'View'}</span>
+                            {isExpanded ? (
+                              <ChevronUp className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        </td>
+                      </tr>
 
-                    {isExpanded && (
-                      <tr>
-                        <td colSpan={7} className="border-t border-gray-100 bg-gray-50/90 px-4 py-3">
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={7} className="border-t border-gray-100 bg-gray-50/90 px-4 py-3">
                           <div className="grid gap-2 lg:grid-cols-2 lg:gap-3">
                             <div className="rounded-md border border-gray-200 bg-white p-2">
                               <h4 className="mb-1.5 flex items-center gap-1 text-xs font-semibold text-gray-900">
@@ -749,6 +904,110 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ isFBOnly = false }) =
               })}
             </tbody>
           </table>
+          </div>
+
+          {/* Pagination Toolbar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-gray-200 bg-gray-50/60 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600">
+              <span>
+                Showing{' '}
+                <span className="font-semibold text-gray-900">
+                  {filteredOrders.length === 0 ? 0 : startIndex + 1}
+                </span>{' '}
+                to{' '}
+                <span className="font-semibold text-gray-900">{endIndex}</span>{' '}
+                of{' '}
+                <span className="font-semibold text-gray-900">
+                  {filteredOrders.length}
+                </span>{' '}
+                orders
+              </span>
+              <div className="flex items-center gap-1.5 pl-3 border-l border-gray-200">
+                <span className="text-gray-500">Per page:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="h-7 rounded border border-gray-200 bg-white px-2 text-xs font-medium text-gray-700 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 cursor-pointer"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="inline-flex h-7 w-7 items-center justify-center rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-gray-600 disabled:cursor-not-allowed transition-colors"
+                title="First page"
+              >
+                <ChevronsLeft className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="inline-flex h-7 w-7 items-center justify-center rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-gray-600 disabled:cursor-not-allowed transition-colors"
+                title="Previous page"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+
+              <div className="flex items-center gap-1 mx-1">
+                {getPageNumbers().map((page, idx) => {
+                  if (typeof page === 'string') {
+                    return (
+                      <span key={`ellipsis-${idx}`} className="px-1 text-xs text-gray-400">
+                        …
+                      </span>
+                    );
+                  }
+                  const isActive = page === currentPage;
+                  return (
+                    <button
+                      key={page}
+                      type="button"
+                      onClick={() => setCurrentPage(page)}
+                      className={`inline-flex h-7 min-w-[1.75rem] px-2 items-center justify-center rounded text-xs font-medium transition-colors ${
+                        isActive
+                          ? 'bg-gray-900 text-white shadow-sm font-semibold'
+                          : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="inline-flex h-7 w-7 items-center justify-center rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-gray-600 disabled:cursor-not-allowed transition-colors"
+                title="Next page"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="inline-flex h-7 w-7 items-center justify-center rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-gray-600 disabled:cursor-not-allowed transition-colors"
+                title="Last page"
+              >
+                <ChevronsRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

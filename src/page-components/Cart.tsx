@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from '@/src/compat/router';
 import { generateProductUrl } from '../utils/slugUtils';
-import { 
-  ShoppingCart, 
-  Trash2, 
-  Plus, 
-  Minus, 
+import {
+  ShoppingCart,
+  Trash2,
+  Plus,
+  Minus,
   Heart,
   Tag,
   X
@@ -36,12 +36,12 @@ const CartPage: React.FC = () => {
   useEffect(() => {
     setCart(CartManager.getCart());
     const unsubscribe = CartManager.subscribe(setCart);
-    
+
     // Load favorites from Supabase if user is logged in
     if (user) {
       loadUserFavorites();
     }
-    
+
     return unsubscribe;
   }, [user]);
 
@@ -59,7 +59,7 @@ const CartPage: React.FC = () => {
 
   const loadUserFavorites = async () => {
     if (!user) return;
-    
+
     try {
       const userFavorites = await FavoritesService.getUserFavorites();
       const favoriteIds = userFavorites.map(fav => fav.product_id);
@@ -79,7 +79,7 @@ const CartPage: React.FC = () => {
 
     try {
       const isCurrentlyFavorite = favorites.includes(productId);
-      
+
       if (isCurrentlyFavorite) {
         await FavoritesService.removeFromFavorites(productId);
         setFavorites(prev => prev.filter(id => id !== productId));
@@ -144,7 +144,7 @@ const CartPage: React.FC = () => {
   const productDiscount = originalTotal - cart.total;
 
   // Check if cart contains physical products (posters or clothing)
-  const hasPhysicalProducts = cart.items.some(item => 
+  const hasPhysicalProducts = cart.items.some(item =>
     item.selectedProductType === 'poster' || item.selectedProductType === 'clothing'
   );
 
@@ -164,14 +164,14 @@ const CartPage: React.FC = () => {
           <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
             <ShoppingCart className="w-8 h-8 text-gray-400" />
           </div>
-          
+
           <h1 className="text-xl font-medium text-gray-900 mb-2">
             Your Cart is Empty
           </h1>
           <p className="text-sm text-gray-500 mb-6 leading-relaxed">
             Discover amazing products and add them to your cart to get started.
           </p>
-          
+
           <div className="space-y-2.5">
             <Link
               to="/"
@@ -218,7 +218,7 @@ const CartPage: React.FC = () => {
                     <div className="flex justify-between items-center gap-4">
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900 text-base md:text-lg leading-tight mb-0.5 line-clamp-1">{item.product.title}</h3>
-                        
+
                         {/* Product Variant Info */}
                         <div className="space-y-1">
                           {item.selectedProductType === 'clothing' && item.options && (
@@ -241,22 +241,20 @@ const CartPage: React.FC = () => {
 
                         {/* Action Buttons */}
                         <div className="flex items-center space-x-3 mt-1.5">
-                          <button 
+                          <button
                             onClick={() => toggleFavorite(item.product.id)}
                             disabled={favoritesLoading[item.product.id]}
-                            className={`transition-colors ${
-                              favorites.includes(item.product.id)
-                                ? 'text-red-500 hover:text-red-600'
-                                : 'text-gray-400 hover:text-red-500'
-                            } ${favoritesLoading[item.product.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`transition-colors ${favorites.includes(item.product.id)
+                              ? 'text-red-500 hover:text-red-600'
+                              : 'text-gray-400 hover:text-red-500'
+                              } ${favoritesLoading[item.product.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
-                            <Heart 
-                              className={`w-4 h-4 ${
-                                favorites.includes(item.product.id) ? 'fill-current' : ''
-                              } ${favoritesLoading[item.product.id] ? 'animate-pulse' : ''}`} 
+                            <Heart
+                              className={`w-4 h-4 ${favorites.includes(item.product.id) ? 'fill-current' : ''
+                                } ${favoritesLoading[item.product.id] ? 'animate-pulse' : ''}`}
                             />
                           </button>
-                          <button 
+                          <button
                             onClick={() => removeItem(item.product.id)}
                             className="text-gray-400 hover:text-red-600 transition-colors"
                           >
@@ -273,7 +271,7 @@ const CartPage: React.FC = () => {
                             const itemOriginalPrice = item.selectedProductType === 'poster' && item.selectedPosterSize && item.product.posterPricing
                               ? item.product.posterPricing[item.selectedPosterSize]
                               : item.product.originalPrice;
-                            
+
                             return itemOriginalPrice && itemOriginalPrice > item.selectedPrice ? (
                               <>
                                 <p className="text-sm text-gray-600 line-through">
@@ -295,7 +293,7 @@ const CartPage: React.FC = () => {
                             );
                           })()}
                         </div>
-                        
+
                         {/* Quantity is hidden for digital downloads */}
                         {item.selectedProductType !== 'digital' && (
                           <div className="flex items-center space-x-2">

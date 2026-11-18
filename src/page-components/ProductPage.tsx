@@ -65,7 +65,14 @@ const ProductPage: React.FC<ProductPageProps> = ({ initialProduct }) => {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [activeTab, setActiveTab] = useState('itemDetails');
 
-  const [selectedProductType, setSelectedProductType] = useState<'digital' | 'poster'>('digital');
+  const isInitiallyWooden =
+    (categorySlug?.toLowerCase() === 'normal' && productSlug?.toLowerCase() === 'rebellion') ||
+    productSlug?.toLowerCase() === 'rebellion' ||
+    initialProduct?.title?.toLowerCase() === 'rebellion';
+
+  const [selectedProductType, setSelectedProductType] = useState<'digital' | 'poster' | 'wooden'>(
+    isInitiallyWooden ? 'wooden' : 'digital'
+  );
   const [selectedPosterSize, setSelectedPosterSize] = useState<string>('A4');
   const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -173,7 +180,17 @@ const ProductPage: React.FC<ProductPageProps> = ({ initialProduct }) => {
   React.useEffect(() => {
     const activeProduct = findProductBySlugs(allProducts, categorySlug || '', productSlug || '') || initialProduct;
     if (activeProduct) {
-      if (isInternational) {
+      const isWooden =
+        (categorySlug?.toLowerCase() === 'normal' && productSlug?.toLowerCase() === 'rebellion') ||
+        productSlug?.toLowerCase() === 'rebellion' ||
+        (activeProduct as any)?.slug?.toLowerCase() === 'rebellion' ||
+        activeProduct.title?.toLowerCase() === 'rebellion' ||
+        activeProduct.productType === 'wooden' ||
+        (activeProduct as any)?.product_type === 'wooden';
+
+      if (isWooden) {
+        setSelectedProductType('wooden');
+      } else if (isInternational) {
         setSelectedProductType('digital');
       } else {
         setSelectedProductType(activeProduct.productType || 'digital');
@@ -267,6 +284,13 @@ const ProductPage: React.FC<ProductPageProps> = ({ initialProduct }) => {
       cat.toLowerCase().includes('clothing')
     ));
   const isNormalItem = (product?.categories && product.categories.includes('Normal')) || (product as any)?.category === 'Normal';
+  const isWoodenProduct =
+    (categorySlug?.toLowerCase() === 'normal' && productSlug?.toLowerCase() === 'rebellion') ||
+    productSlug?.toLowerCase() === 'rebellion' ||
+    (product as any)?.slug?.toLowerCase() === 'rebellion' ||
+    product?.title?.toLowerCase() === 'rebellion' ||
+    product?.productType === 'wooden' ||
+    (product as any)?.product_type === 'wooden';
 
   // Stable "random" cart count between 5 and 30 per product
   const cartCount = React.useMemo(() => {
@@ -791,8 +815,12 @@ const ProductPage: React.FC<ProductPageProps> = ({ initialProduct }) => {
                     <Share2 className="w-3 h-3" />
                     <span className="text-xs font-sans font-normal">Share</span>
                   </button>
-                  <span className="text-xs text-gray-400 font-sans font-normal">•</span>
-                  <span className="text-xs text-gray-500 font-sans font-normal">In {cartCount}+ carts</span>
+                  {!isWoodenProduct && (
+                    <>
+                      <span className="text-xs text-gray-400 font-sans font-normal">•</span>
+                      <span className="text-xs text-gray-500 font-sans font-normal">In {cartCount}+ carts</span>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -864,9 +892,9 @@ const ProductPage: React.FC<ProductPageProps> = ({ initialProduct }) => {
               )}
 
               {/* Product Type & Poster Size - Hide for F&B, Commissioned Art, and International Users */}
-              {!isInternational && !isFBCategory && !product.categories?.some((cat: string) => 
+              {(isWoodenProduct || (!isInternational && !isFBCategory && !product.categories?.some((cat: string) => 
                 cat.toLowerCase().includes('commission')
-              ) && !product.category?.toLowerCase().includes('commission') && (
+              ) && !product.category?.toLowerCase().includes('commission'))) && (
               <div className="space-y-3 mb-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -874,7 +902,7 @@ const ProductPage: React.FC<ProductPageProps> = ({ initialProduct }) => {
                     <div className="w-full border border-gray-300 rounded-md bg-gray-50 overflow-hidden">
                       <select
                         value={selectedProductType}
-                        onChange={(e) => setSelectedProductType(e.target.value as 'digital' | 'poster')}
+                        onChange={(e) => setSelectedProductType(e.target.value as 'digital' | 'poster' | 'wooden')}
                         className="w-full px-3 py-1.5 pr-8 border-0 appearance-none bg-transparent focus:outline-none focus:ring-0 text-xs text-gray-700 font-sans font-normal text-left [&>option]:bg-white [&>option]:text-gray-700 [&>option]:text-left"
                         style={{
                           backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23718196' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
@@ -884,8 +912,14 @@ const ProductPage: React.FC<ProductPageProps> = ({ initialProduct }) => {
                           textAlign: 'left'
                         }}
                       >
-                        <option value="digital">Digital Download</option>
-                        <option value="poster">Physical Poster</option>
+                        {isWoodenProduct ? (
+                          <option value="wooden">Wooden Product</option>
+                        ) : (
+                          <>
+                            <option value="digital">Digital Download</option>
+                            <option value="poster">Physical Poster</option>
+                          </>
+                        )}
                       </select>
                     </div>
                   </div>
@@ -933,8 +967,8 @@ const ProductPage: React.FC<ProductPageProps> = ({ initialProduct }) => {
                   )}
                 </div>
                 
-                {/* Quantity Selection - Only show for posters */}
-                {selectedProductType === 'poster' && (
+                {/* Quantity Selection - Show for posters and wooden products */}
+                {(selectedProductType === 'poster' || isWoodenProduct) && (
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1 font-sans font-normal">Quantity</label>
                     <div className="w-full px-3 py-1.5 border border-gray-300 rounded-md bg-gray-50 text-sm flex items-center justify-between">
@@ -958,9 +992,11 @@ const ProductPage: React.FC<ProductPageProps> = ({ initialProduct }) => {
                   </div>
                 )}
                 
-                <p className="text-xs text-red-500 mt-2 mb-2 font-sans font-normal">
-                  Frames are not included
-                </p>
+                {!isWoodenProduct && (
+                  <p className="text-xs text-red-500 mt-2 mb-2 font-sans font-normal">
+                    Frames are not included
+                  </p>
+                )}
               </div>
               )}
 
@@ -1138,13 +1174,17 @@ const ProductPage: React.FC<ProductPageProps> = ({ initialProduct }) => {
                     <div className="space-y-0">
                       <div className="flex justify-between items-center py-1.5 border-b border-gray-200">
                         <span className="font-medium text-gray-900 text-sm font-sans font-normal">Material:</span>
-                        <span className="text-gray-600 text-sm font-sans font-normal">{selectedProductType === 'poster' ? 'Premium matte paper' : 'Digital file'}</span>
+                        <span className="text-gray-600 text-sm font-sans font-normal">
+                          {isWoodenProduct ? 'Handcrafted Solid Wood' : (selectedProductType === 'poster' ? 'Premium matte paper' : 'Digital file')}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center py-1.5 border-b border-gray-200">
                         <span className="font-medium text-gray-900 text-sm font-sans font-normal">Style:</span>
-                        <span className="text-gray-600 text-sm font-sans font-normal">{selectedProductType === 'poster' ? 'High-quality print' : 'Digital artwork'}</span>
+                        <span className="text-gray-600 text-sm font-sans font-normal">
+                          {isWoodenProduct ? '3D Geometric Wood Relief Artwork' : (selectedProductType === 'poster' ? 'High-quality print' : 'Digital artwork')}
+                        </span>
                       </div>
-                      {selectedProductType === 'digital' && (
+                      {!isWoodenProduct && selectedProductType === 'digital' && (
                         <div className="flex justify-between items-center py-1.5 border-b border-gray-200">
                           <span className="font-medium text-gray-900 text-sm font-sans font-normal">Size:</span>
                           <span className="text-gray-600 text-sm font-sans font-normal">High resolution (300 DPI), 3000px X 4500px</span>
@@ -1152,15 +1192,21 @@ const ProductPage: React.FC<ProductPageProps> = ({ initialProduct }) => {
                       )}
                       <div className="flex justify-between items-center py-1.5 border-b border-gray-200">
                         <span className="font-medium text-gray-900 text-sm font-sans font-normal">Origin:</span>
-                        <span className="text-gray-600 text-sm font-sans font-normal">{selectedProductType === 'poster' ? 'Printed in India' : 'Created digitally'}</span>
+                        <span className="text-gray-600 text-sm font-sans font-normal">
+                          {isWoodenProduct ? 'Handcrafted in India' : (selectedProductType === 'poster' ? 'Printed in India' : 'Created digitally')}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center py-1.5 border-b border-gray-200">
                         <span className="font-medium text-gray-900 text-sm font-sans font-normal">Frame:</span>
-                        <span className="text-gray-600 text-sm font-sans font-normal">{selectedProductType === 'poster' ? 'No frame included' : 'No frame needed'}</span>
+                        <span className="text-gray-600 text-sm font-sans font-normal">
+                          {isWoodenProduct ? 'No frame needed (Ready to hang)' : (selectedProductType === 'poster' ? 'No frame included' : 'No frame needed')}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center py-1.5">
                         <span className="font-medium text-gray-900 text-sm font-sans font-normal">Quality:</span>
-                        <span className="text-gray-600 text-sm font-sans font-normal">Premium grade</span>
+                        <span className="text-gray-600 text-sm font-sans font-normal">
+                          {isWoodenProduct ? 'Master Artisan Handcrafted' : 'Premium grade'}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1175,21 +1221,29 @@ const ProductPage: React.FC<ProductPageProps> = ({ initialProduct }) => {
                     <div className="space-y-0">
                       <div className="flex justify-between items-center py-1.5 border-b border-gray-200">
                         <span className="font-medium text-gray-900 text-sm font-sans font-normal">Delivery Method:</span>
-                        <span className="text-gray-600 text-sm font-sans font-normal">{selectedProductType === 'poster' ? 'Free Standard Delivery' : 'Instant Digital Download'}</span>
+                        <span className="text-gray-600 text-sm font-sans font-normal">
+                          {isWoodenProduct || selectedProductType === 'poster' ? 'Free Standard Delivery' : 'Instant Digital Download'}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center py-1.5 border-b border-gray-200">
                         <span className="font-medium text-gray-900 text-sm font-sans font-normal">Delivery Time:</span>
-                        <span className="text-gray-600 text-sm font-sans font-normal">{selectedProductType === 'poster' ? '5-7 business days' : 'Immediately after purchase'}</span>
+                        <span className="text-gray-600 text-sm font-sans font-normal">
+                          {isWoodenProduct || selectedProductType === 'poster' ? '5-7 business days' : 'Immediately after purchase'}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center py-1.5 border-b border-gray-200">
                         <span className="font-medium text-gray-900 text-sm font-sans font-normal">Tracking:</span>
-                        <span className="text-gray-600 text-sm font-sans font-normal">{selectedProductType === 'poster' ? 'Tracking information provided' : 'Not applicable'}</span>
+                        <span className="text-gray-600 text-sm font-sans font-normal">
+                          {isWoodenProduct || selectedProductType === 'poster' ? 'Tracking information provided' : 'Not applicable'}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center py-1.5 border-b border-gray-200">
                         <span className="font-medium text-gray-900 text-sm font-sans font-normal">Packaging:</span>
-                        <span className="text-gray-600 text-sm font-sans font-normal">{selectedProductType === 'poster' ? 'Secure packaging guaranteed' : 'Digital files only'}</span>
+                        <span className="text-gray-600 text-sm font-sans font-normal">
+                          {isWoodenProduct ? 'Secure protective wooden packaging' : (selectedProductType === 'poster' ? 'Secure packaging guaranteed' : 'Digital files only')}
+                        </span>
                       </div>
-                      {selectedProductType === 'poster' && (
+                      {(isWoodenProduct || selectedProductType === 'poster') && (
                         <div className="flex justify-between items-center py-1.5 border-b border-gray-200">
                           <span className="font-medium text-gray-900 text-sm font-sans font-normal">Returns / Refunds:</span>
                           <span className="text-gray-600 text-sm font-sans font-normal">
@@ -1199,7 +1253,7 @@ const ProductPage: React.FC<ProductPageProps> = ({ initialProduct }) => {
                           </span>
                         </div>
                       )}
-                      {selectedProductType === 'digital' && (
+                      {!isWoodenProduct && selectedProductType === 'digital' && (
                         <div className="flex justify-between items-center py-1.5 border-b border-gray-200">
                           <span className="font-medium text-gray-900 text-sm font-sans font-normal">File Formats:</span>
                           <span className="text-gray-600 text-sm font-sans font-normal">PNG, PDF</span>
@@ -1222,19 +1276,27 @@ const ProductPage: React.FC<ProductPageProps> = ({ initialProduct }) => {
                     <div className="space-y-0">
                       <div className="flex justify-between items-center py-1.5 border-b border-gray-200">
                         <span className="font-medium text-gray-900 text-sm font-sans font-normal">Eco-Friendly:</span>
-                        <span className="text-gray-600 text-sm font-sans font-normal">{selectedProductType === 'poster' ? 'Sustainable materials used' : 'Zero environmental impact'}</span>
+                        <span className="text-gray-600 text-sm font-sans font-normal">
+                          {isWoodenProduct ? 'Sustainably sourced natural wood' : (selectedProductType === 'poster' ? 'Sustainable materials used' : 'Zero environmental impact')}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center py-1.5 border-b border-gray-200">
                         <span className="font-medium text-gray-900 text-sm font-sans font-normal">Uniqueness:</span>
-                        <span className="text-gray-600 text-sm font-sans font-normal">{selectedProductType === 'poster' ? 'One-of-a-kind variations' : 'High-resolution digital file'}</span>
+                        <span className="text-gray-600 text-sm font-sans font-normal">
+                          {isWoodenProduct ? 'One-of-a-kind handcrafted piece' : (selectedProductType === 'poster' ? 'One-of-a-kind variations' : 'High-resolution digital file')}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center py-1.5 border-b border-gray-200">
                         <span className="font-medium text-gray-900 text-sm font-sans font-normal">Compatibility:</span>
-                        <span className="text-gray-600 text-sm font-sans font-normal">{selectedProductType === 'poster' ? 'Standard framing sizes' : 'All modern devices'}</span>
+                        <span className="text-gray-600 text-sm font-sans font-normal">
+                          {isWoodenProduct ? 'Standard wall mount fittings included' : (selectedProductType === 'poster' ? 'Standard framing sizes' : 'All modern devices')}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center py-1.5">
                         <span className="font-medium text-gray-900 text-sm font-sans font-normal">Quality:</span>
-                        <span className="text-gray-600 text-sm font-sans font-normal">Premium grade guarantee</span>
+                        <span className="text-gray-600 text-sm font-sans font-normal">
+                          {isWoodenProduct ? 'Premium artisan grade guarantee' : 'Premium grade guarantee'}
+                        </span>
                       </div>
                     </div>
                   </div>
