@@ -118,7 +118,7 @@ async function run() {
     const existing = fs.readFileSync(redirectsPath, 'utf-8');
     base = existing
       .replace(
-        /# -------+\n# AUTO-GENERATED.*?# --- END AUTO-GENERATED ---\n?/gs,
+        /# -------+\r?\n# AUTO-GENERATED.*?# --- END AUTO-GENERATED ---\r?\n?/gs,
         ''
       )
       .trimEnd();

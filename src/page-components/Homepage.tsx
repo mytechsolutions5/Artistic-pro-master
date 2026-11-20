@@ -84,7 +84,12 @@ const Homepage: React.FC<HomepageProps> = ({
       setLoading(false);
       // Background fetch fresh settings to bypass Next.js static page caching
       HomepageSettingsService.getHomepageSettings().then(settings => {
-        if (settings) setHomepageSettings(settings);
+        if (!settings) return;
+        setHomepageSettings((prev: any) => {
+          if (!prev) return settings;
+          if (JSON.stringify(prev) === JSON.stringify(settings)) return prev;
+          return settings;
+        });
       }).catch(err => console.error('Error background-fetching settings:', err));
       return;
     }
