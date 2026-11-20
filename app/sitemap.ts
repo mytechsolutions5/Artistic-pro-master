@@ -66,20 +66,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       if (!category?.slug) continue;
       const safeCategorySlug = encodeURIComponent(String(category.slug));
       
-      // Traditional category listing
+      // Primary category listing
       entries.push({
         url: `${SITE_URL}/categories/${safeCategorySlug}`,
         lastModified: category.updated_at ? new Date(category.updated_at) : now,
         changeFrequency: 'weekly',
         priority: 0.9,
-      });
-
-      // Collections category page
-      entries.push({
-        url: `${SITE_URL}/collections/${safeCategorySlug}`,
-        lastModified: category.updated_at ? new Date(category.updated_at) : now,
-        changeFrequency: 'weekly',
-        priority: 0.8,
       });
     }
 

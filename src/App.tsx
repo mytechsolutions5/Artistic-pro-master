@@ -144,9 +144,9 @@ function AppContent() {
                   <Route path="/:categorySlug/:productSlug" element={<ProductPage />} />
                   
                   {/* Admin Routes */}
-                  <Route path="/admin/tasks" element={<AdminProtectedRoute><Tasks /></AdminProtectedRoute>} />
-                  <Route path="/admin/activities" element={<AdminProtectedRoute><Activities /></AdminProtectedRoute>} />
                   <Route path="/admin" element={<AdminProtectedRoute><Dashboard /></AdminProtectedRoute>} />
+                  <Route path="/admin/dashboard" element={<AdminProtectedRoute><Dashboard /></AdminProtectedRoute>} />
+                  <Route path="/admin/tasks" element={<AdminProtectedRoute><Tasks /></AdminProtectedRoute>} />
                   <Route path="/admin/orders" element={<AdminProtectedRoute><Orders /></AdminProtectedRoute>} />
                   <Route path="/admin/products" element={<AdminProtectedRoute><Products /></AdminProtectedRoute>} />
                   <Route path="/admin/commissioned-art" element={<AdminProtectedRoute><CommissionedArt /></AdminProtectedRoute>} />

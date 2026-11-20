@@ -124,19 +124,17 @@ export default async function HomePage() {
           })
         }}
       />
-      {/* Crawlable server-rendered homepage content for non-JS and low-JS crawlers */}
+      {/* Crawlable server-rendered homepage content for search engine indexers */}
       {hasSeoSections && (
-        <main className="mx-auto max-w-6xl px-4 py-2">
-          <h1 style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }}>
-            Lurevi — Premium Digital Art Prints & Luxury Collections
-          </h1>
+        <div className="sr-only" aria-hidden="false">
+          <h1>Lurevi — Premium Digital Art Prints &amp; Luxury Collections</h1>
           {categories && categories.length > 0 && (
-            <section className="mt-2">
-              <h2 className="text-lg font-medium text-gray-900">Popular Categories</h2>
-              <ul className="mt-2 list-disc pl-5 text-sm text-gray-700 space-y-1">
+            <section>
+              <h2>Popular Categories</h2>
+              <ul>
                 {categories.slice(0, 10).map((cat) => (
                   <li key={cat.id}>
-                    <a href={`/categories/${cat.slug}`} className="hover:underline">
+                    <a href={`/categories/${cat.slug}`}>
                       {cat.name}
                     </a>
                     {cat.description ? ` - ${cat.description}` : ''}
@@ -147,14 +145,14 @@ export default async function HomePage() {
           )}
 
           {featuredProducts && featuredProducts.length > 0 && (
-            <section className="mt-2">
-              <h2 className="text-lg font-medium text-gray-900">Featured Artworks</h2>
-              <ul className="mt-2 list-disc pl-5 text-sm text-gray-700 space-y-1">
+            <section>
+              <h2>Featured Artworks</h2>
+              <ul>
                 {featuredProducts.slice(0, 10).map((p) => {
                   const categorySlug = Array.isArray(p.categories) && p.categories.length > 0 ? generateSlug(p.categories[0]) : 'browse';
                   return (
                     <li key={p.id}>
-                      <a href={`/categories/${categorySlug}/${p.slug || generateSlug(p.title)}`} className="hover:underline">
+                      <a href={`/categories/${categorySlug}/${p.slug || generateSlug(p.title)}`}>
                         {p.title}
                       </a>
                     </li>
@@ -163,103 +161,8 @@ export default async function HomePage() {
               </ul>
             </section>
           )}
-        </main>
+        </div>
       )}
-
-      {/* Server-rendered SEO content — visible to Google, hidden to users once JS loads */}
-      <noscript>
-        <main style={{ maxWidth: '72rem', margin: '0 auto', padding: '1rem', fontFamily: 'Inter, sans-serif' }}>
-          <h2>Lurevi — Premium Digital Art Prints & Luxury Collections</h2>
-          <p>
-            Welcome to Lurevi, your premier destination for curated luxury digital art, high-resolution wall prints, and exclusive lifestyle collections. We design and select exquisite masterpieces that bring visual harmony, sophistication, and modern aesthetics into your home or office. Whether you are seeking museum-quality digital downloads for instant framing or looking to explore premium physical apparel, Lurevi blends artistic vision with premium craftsmanship to transform your everyday spaces.
-          </p>
-
-          <section style={{ marginTop: '2rem' }}>
-            <h2>Why Choose Lurevi?</h2>
-            <table border={1} style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#f9fafb' }}>
-                  <th style={{ padding: '8px' }}>Feature</th>
-                  <th style={{ padding: '8px', fontWeight: 'bold', color: '#065f46' }}>Lurevi Premium</th>
-                  <th style={{ padding: '8px' }}>Standard Downloads</th>
-                  <th style={{ padding: '8px' }}>Generic Stock Art</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style={{ padding: '8px', fontWeight: 'bold' }}>File Resolution</td>
-                  <td style={{ padding: '8px', color: '#047857', fontWeight: 'bold' }}>300 DPI Giclée-ready</td>
-                  <td style={{ padding: '8px' }}>72 - 150 DPI web res</td>
-                  <td style={{ padding: '8px' }}>Variable / compressed</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px', fontWeight: 'bold' }}>Licensing & Rights</td>
-                  <td style={{ padding: '8px', color: '#047857', fontWeight: 'bold' }}>Personal Print Rights Included</td>
-                  <td style={{ padding: '8px' }}>Restricted / single-use</td>
-                  <td style={{ padding: '8px' }}>Strict commercial terms</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px', fontWeight: 'bold' }}>Expert Curation</td>
-                  <td style={{ padding: '8px', color: '#047857', fontWeight: 'bold' }}>100% Curated by Panel</td>
-                  <td style={{ padding: '8px' }}>Unfiltered user uploads</td>
-                  <td style={{ padding: '8px' }}>Algorithmic selection</td>
-                </tr>
-              </tbody>
-            </table>
-          </section>
-
-          <section style={{ marginTop: '2rem' }}>
-            <h2>Art Curation & Design Insights</h2>
-            <div>
-              <h3>What is digital art and how does downloading it work?</h3>
-              <p>Digital art is high-resolution artwork delivered in digital format (like 300 DPI JPEGs or PDFs). Once purchased, you download the file instantly and can print it using a home printer, local print shop, or online printing service. This provides an affordable, instant way to decorate your space.</p>
-            </div>
-            <div>
-              <h3>What paper weight and style are recommended for printing wall art?</h3>
-              <p>For the best results, we recommend printing on heavy-weight matte paper of at least 200 GSM or premium canvas. Matte paper eliminates reflections, making it perfect for brightly lit rooms, while canvas provides a classic, painterly texture.</p>
-            </div>
-          </section>
-
-          <section style={{ marginTop: '2rem' }}>
-            <h2>Frequently Asked Questions</h2>
-            <ul>
-              <li><strong>How do I receive my digital files after purchase?</strong> Immediately upon checkout, you will receive an email with direct download links.</li>
-              <li><strong>What dimensions are Lurevi\'s digital prints suitable for?</strong> High-resolution 300 DPI files in standard print ratios up to 24x36 inches.</li>
-            </ul>
-          </section>
-
-          {categories && categories.length > 0 && (
-            <section style={{ marginTop: '2rem' }}>
-              <h2>Shop by Category</h2>
-              <ul>
-                {categories.map((cat) => (
-                  <li key={cat.id}>
-                    <a href={`/categories/${cat.slug}`}>
-                      <strong>{cat.name}</strong>
-                      {cat.description && ` — ${cat.description}`}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {featuredProducts && featuredProducts.length > 0 && (
-            <section style={{ marginTop: '2rem' }}>
-              <h2>Featured Artworks</h2>
-              <ul>
-                {featuredProducts.map((p) => (
-                  <li key={p.id}>
-                    <a href={`/categories/${Array.isArray(p.categories) && p.categories.length > 0 ? generateSlug(p.categories[0]) : 'browse'}/${p.slug || generateSlug(p.title)}`}>
-                      {p.title} — ₹{p.price}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-        </main>
-      </noscript>
 
       {/* Client-side React app — full interactive experience */}
       <HomepageClient 

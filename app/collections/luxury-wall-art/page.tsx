@@ -182,36 +182,6 @@ export default async function Page() {
           __html: JSON.stringify(schemas),
         }}
       />
-      {/* Crawlable server-rendered text content for search engine indexers */}
-      <noscript>
-        <main style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem', fontFamily: 'Inter, sans-serif' }}>
-          <h1>Luxury Wall Art Prints — Curated Premium Decor India</h1>
-          <p>
-            Welcome to the Lurevi Luxury Collection. Our premium selection features high-end digital paintings, contemporary abstract art, and museum-quality photography prints designed specifically to elevate upscale residential and commercial spaces. Every piece is curated from professional creators globally, ensuring your walls display artwork that is sophisticated and distinct.
-          </p>
-
-          <section style={{ marginTop: '2rem' }}>
-            <h2>Museum-Grade Canvas & Archival Prints</h2>
-            <p>
-              We believe luxury lies in the fine details. That is why Lurevi prints exclusively on high-weight 240+ GSM archival matte paper and premium 350 GSM canvas. By leveraging advanced pigment ink formulations, our prints resist fading for up to 75+ years under standard lighting conditions, preserving the deep blacks and rich golden gradients exactly as the artist intended.
-            </p>
-          </section>
-
-          <section style={{ marginTop: '2rem' }}>
-            <h2>Shop the Luxury Wall Art Collection</h2>
-            <ul>
-              {displayProducts.map((p) => (
-                <li key={p.id}>
-                  <a href={`/categories/${Array.isArray(p.categories) && p.categories.length > 0 ? generateSlug(p.categories[0]) : 'luxury-wall-art'}/${p.slug || generateSlug(p.title)}`}>
-                    {p.title} — ₹{p.price}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </main>
-      </noscript>
-
       {/* Full interactive React page with custom luxury styling */}
       <LuxuryWallArtClient initialProducts={displayProducts} />
     </>

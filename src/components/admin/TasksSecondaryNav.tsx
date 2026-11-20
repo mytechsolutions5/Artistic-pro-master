@@ -63,18 +63,21 @@ const TasksSecondaryNav: React.FC<TasksSecondaryNavProps> = ({
 
   return (
     <div
-      className={`fixed left-20 top-0 z-30 flex h-screen w-20 flex-col border-r border-gray-200 bg-white ${className}`}
+      className={`fixed left-20 top-0 z-30 flex h-screen w-20 flex-col border-r border-white/80 bg-white/60 shadow-[4px_0_30px_0_rgba(15,23,42,0.04),inset_-1px_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-2xl ${className}`}
     >
-      <div className="shrink-0 border-b border-gray-200 p-4">
+      {/* Specular right reflection edge */}
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-[1.5px] bg-gradient-to-b from-white/95 via-white/50 to-white/20" />
+
+      <div className="shrink-0 border-b border-white/40 p-3.5 shadow-none">
         <div className="flex items-center justify-center">
-          <div className="rounded-lg bg-gray-100 p-1.5">
-            <CheckSquare className="h-5 w-5 text-gray-700" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/90 bg-white/70 shadow-[inset_0_1px_1px_rgba(255,255,255,0.95)] backdrop-blur-md">
+            <CheckSquare className="h-5 w-5 text-slate-800" />
           </div>
         </div>
       </div>
 
-      <div ref={navRef} onScroll={onNavScroll} className="min-h-0 flex-1 overflow-y-auto py-4">
-        <nav className="space-y-1 px-2.5">
+      <div ref={navRef} onScroll={onNavScroll} className="min-h-0 flex-1 overflow-y-auto py-3">
+        <nav className="space-y-1.5 px-2.5">
           {TASKS_TABS.map((tab) => {
             const isViewTab = tab.id === 'board' || tab.id === 'list';
             const isActive =
@@ -92,34 +95,34 @@ const TasksSecondaryNav: React.FC<TasksSecondaryNavProps> = ({
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => onTabChange(tab.id)}
-                className={`group relative flex w-full items-center justify-center rounded-lg p-2.5 transition-all duration-200 ${
-                  isActive ? 'bg-gray-50 text-black' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                }`}
+                className={`group relative flex w-full items-center justify-center rounded-2xl p-2.5 transition-all duration-200 cursor-pointer ${isActive
+                  ? 'bg-slate-900/90 text-white shadow-[0_4px_16px_rgba(15,23,42,0.25),inset_0_1px_1px_rgba(255,255,255,0.25)] border border-white/30 backdrop-blur-md'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 hover:shadow-xs border border-transparent'
+                  }`}
                 title={tab.label}
               >
                 {isActive && (
-                  <div className="absolute bottom-0 left-0 top-0 w-1 rounded-r-full bg-black" />
+                  <div className="absolute left-1 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-gradient-to-b from-teal-400 to-emerald-400 shadow-[0_0_8px_rgba(45,212,191,0.8)] pointer-events-none" />
                 )}
 
                 <span
-                  className={`flex-shrink-0 transition-colors ${
-                    isActive ? 'text-black' : 'text-gray-500 group-hover:text-gray-700'
-                  }`}
+                  className={`flex-shrink-0 transition-transform duration-200 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-800 group-hover:scale-110'
+                    }`}
                 >
                   {tab.icon}
                 </span>
 
-                <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 transform whitespace-nowrap rounded-lg bg-gray-900 px-3 py-2 text-sm text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 transform whitespace-nowrap rounded-xl border border-white/80 bg-slate-900/90 px-3 py-2 text-xs text-white opacity-0 shadow-[0_8px_24px_rgba(15,23,42,0.25)] backdrop-blur-xl transition-opacity duration-200 group-hover:opacity-100">
                   <div className="flex items-center space-x-2">
-                    <span>{tab.label}</span>
+                    <span className="font-semibold">{tab.label}</span>
                     {badge != null && (
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                      <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium text-white">
                         {badge}
                       </span>
                     )}
                   </div>
-                  <div className="mt-1 text-xs text-gray-300">{tab.description}</div>
-                  <div className="absolute right-full top-1/2 -translate-y-1/2 transform border-4 border-transparent border-r-gray-900" />
+                  <div className="mt-0.5 text-[10px] text-slate-300 font-normal">{tab.description}</div>
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 transform border-4 border-transparent border-r-slate-900/90" />
                 </div>
               </button>
             );

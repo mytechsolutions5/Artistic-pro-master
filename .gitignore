@@ -37,3 +37,6 @@ public/pinterest-catalog.csv
 
 # Local development API folder (copied from api_dev)
 app/api
+
+# Scratch scripts
+scratch/

@@ -1,8 +1,10 @@
 'use client'
 
 import React, { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
+import { ShieldAlert, Lock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { isAdmin } from '../../utils/adminUtils';
+import { canAccessAdmin, canAccessAdminPath, getUserRole } from '../../utils/adminUtils';
 
 interface AdminProtectedRouteProps {
   children: React.ReactNode;
@@ -10,21 +12,23 @@ interface AdminProtectedRouteProps {
 
 const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      window.location.href = '/sign-in';
+    }
+  }, [loading, user]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pink-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-teal-600"></div>
       </div>
     );
   }
 
   if (!user) {
-    // Redirect to login page instead of showing login form
-    useEffect(() => {
-      window.location.href = '/sign-in';
-    }, []);
-    
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
@@ -44,33 +48,63 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) =
     );
   }
 
-  // Check if user is admin
-  if (!isAdmin(user.email)) {
+  // Check if user has staff/admin permissions
+  if (!canAccessAdmin(user)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-100 p-8 text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-red-600">
+            <Lock className="w-8 h-8" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 mb-6 text-sm">
             You don't have permission to access the admin panel. 
-            Only administrators can view this page.
+            Only administrators and staff members can view this area.
           </p>
           <div className="space-y-3">
             <button
               onClick={() => window.location.href = '/'}
-              className="w-full bg-pink-600 text-white py-2 px-4 rounded-lg hover:bg-pink-700 transition-colors"
+              className="w-full bg-teal-600 text-white py-2 px-4 rounded-xl text-sm font-semibold hover:bg-teal-700 transition-colors shadow-sm"
             >
               Go to Homepage
             </button>
             <button
               onClick={() => window.location.href = '/dashboard'}
-              className="w-full bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
+              className="w-full bg-gray-100 text-gray-800 py-2 px-4 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-colors"
             >
-              Go to Dashboard
+              Go to Customer Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Section-level access check for Employees
+  const currentPath = pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
+  if (!canAccessAdminPath(user, currentPath)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-gray-100 p-8 text-center">
+          <div className="w-16 h-16 bg-amber-50 rounded-2xl border border-amber-200/60 flex items-center justify-center mx-auto mb-4 text-amber-600">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Section Restricted</h2>
+          <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+            Your account has the <strong className="text-gray-900 font-semibold">Employee</strong> role, which does not have permission to access this administrative tab. Please contact an administrator if you need access.
+          </p>
+          <div className="space-y-2.5">
+            <button
+              onClick={() => window.location.href = '/admin/dashboard'}
+              className="w-full bg-teal-600 text-white py-2 px-4 rounded-xl text-sm font-semibold hover:bg-teal-700 transition-colors shadow-sm"
+            >
+              Back to Dashboard
+            </button>
+            <button
+              onClick={() => window.location.href = '/admin/orders'}
+              className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-colors"
+            >
+              Go to Orders
             </button>
           </div>
         </div>

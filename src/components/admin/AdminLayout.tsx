@@ -31,7 +31,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, noHeader = f
   };
 
   return (
-    <div className="flex h-screen bg-gray-50" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-teal-50/20 to-indigo-50/25 overflow-hidden w-full max-w-full" style={{ fontFamily: 'Inter, sans-serif' }}>
       <Sidebar 
         collapsed={sidebarCollapsed} 
         onToggle={handleToggle}
@@ -39,7 +39,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, noHeader = f
         onExpand={handleExpand}
         onLogout={handleLogout}
       />
-      <div className={`flex-1 overflow-auto transition-all duration-300 ${
+      <div className={`flex-1 min-w-0 overflow-y-auto overflow-x-hidden transition-all duration-300 ${
         sidebarCollapsed ? 'ml-20' : 'ml-64'
       }`}>
         <div className={noHeader ? "p-0" : "p-4"}>

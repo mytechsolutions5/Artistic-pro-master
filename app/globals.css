@@ -241,29 +241,13 @@
   background: transparent;
 }
 
-/* Scroll fade effect for sidebar */
+/* Scroll fade effect for sidebar disabled to prevent downward shadow */
 .sidebar-scroll::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 20px;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0));
-  pointer-events: none;
-  z-index: 10;
+  display: none;
 }
 
 .sidebar-scroll::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 20px;
-  background: linear-gradient(to top, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0));
-  pointer-events: none;
-  z-index: 10;
+  display: none;
 }
 
 /* Smooth transitions */

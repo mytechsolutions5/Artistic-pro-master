@@ -92,6 +92,7 @@ export interface RealUser {
   raw_user_meta_data?: any;
   is_anonymous?: boolean;
   role?: string;
+  allowed_tabs?: string[];
   aud?: string;
   confirmation_sent_at?: string;
   recovery_sent_at?: string;
@@ -232,19 +233,35 @@ export class RealUserService {
     }
   }
 
-  // Update user role
-  static async updateUserRole(userId: string, role: string): Promise<boolean> {
+  // Update user role and optional allowed tabs
+  static async updateUserRole(userId: string, role: string, allowedTabs?: string[]): Promise<boolean> {
     try {
-      const supabaseAdmin = getSupabaseAdmin();
-      const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-        app_metadata: { role }
+      // First try via our secure Next.js API route
+      const response = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role, allowedTabs })
       });
-      
+
+      if (response.ok) {
+        const data = await response.json();
+        return Boolean(data.success);
+      }
+
+      // If in server environment with service key available, try direct client
+      const supabaseAdmin = getSupabaseAdmin();
+      const payload: any = {
+        app_metadata: { role, ...(allowedTabs ? { allowed_tabs: allowedTabs } : {}) },
+        user_metadata: { role, ...(allowedTabs ? { allowed_tabs: allowedTabs } : {}) }
+      };
+
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, payload);
+
       if (error) {
         console.error('Error updating user role:', error);
         return false;
       }
-      
+
       return true;
     } catch (error) {
       console.error('Error updating user role:', error);
@@ -255,16 +272,28 @@ export class RealUserService {
   // Ban/unban user
   static async banUser(userId: string, banUntil?: string): Promise<boolean> {
     try {
+      // First try via secure API route
+      const response = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, banUntil })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return Boolean(data.success);
+      }
+
       const supabaseAdmin = getSupabaseAdmin();
       const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         ban_duration: banUntil || 'none'
       });
-      
+
       if (error) {
         console.error('Error banning user:', error);
         return false;
       }
-      
+
       return true;
     } catch (error) {
       console.error('Error banning user:', error);
@@ -275,14 +304,26 @@ export class RealUserService {
   // Delete user
   static async deleteUser(userId: string): Promise<boolean> {
     try {
+      // First try via secure API route
+      const response = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return Boolean(data.success);
+      }
+
       const supabaseAdmin = getSupabaseAdmin();
       const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
-      
+
       if (error) {
         console.error('Error deleting user:', error);
         return false;
       }
-      
+
       return true;
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -291,21 +332,34 @@ export class RealUserService {
   }
 
   // Create user (admin only)
-  static async createUser(email: string, password: string, userData?: any): Promise<boolean> {
+  static async createUser(email: string, password: string, userData?: any, allowedTabs?: string[]): Promise<boolean> {
     try {
+      // First try via secure API route
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, role: userData?.role, userData, allowedTabs })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return Boolean(data.success);
+      }
+
       const supabaseAdmin = getSupabaseAdmin();
       const { error } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
-        user_metadata: userData
+        user_metadata: { ...userData, ...(allowedTabs ? { allowed_tabs: allowedTabs } : {}) },
+        app_metadata: { role: userData?.role || 'customer', ...(allowedTabs ? { allowed_tabs: allowedTabs } : {}) }
       });
-      
+
       if (error) {
         console.error('Error creating user:', error);
         return false;
       }
-      
+
       return true;
     } catch (error) {
       console.error('Error creating user:', error);

@@ -37,7 +37,11 @@ interface NewsletterCampaign {
   sent_at?: string | null;
 }
 
-const NewsletterManagement: React.FC = () => {
+export interface NewsletterManagementProps {
+  embedMode?: boolean;
+}
+
+const NewsletterManagement: React.FC<NewsletterManagementProps> = ({ embedMode = false }) => {
   const [activeTab, setActiveTab] = useState<'subscribers' | 'campaigns'>('subscribers');
   
   // Subscribers State
@@ -315,8 +319,8 @@ const NewsletterManagement: React.FC = () => {
     return matchesSearch && matchesFilter;
   });
 
-  return (
-    <AdminLayout title="Newsletter Management">
+  const pageContent = (
+    <div className="relative">
       {/* Top Banner Notifications */}
       {notification && (
         <div
@@ -644,6 +648,16 @@ const NewsletterManagement: React.FC = () => {
           )}
         </div>
       )}
+    </div>
+  );
+
+  if (embedMode) {
+    return pageContent;
+  }
+
+  return (
+    <AdminLayout title="Newsletter" noHeader={true}>
+      {pageContent}
     </AdminLayout>
   );
 };

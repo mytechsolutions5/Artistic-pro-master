@@ -1,13 +1,18 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import { Save, TrendingUp, Facebook, BarChart3, Eye, CheckCircle, AlertCircle, ExternalLink, Copy, Check, Search, Link2, FileText, Calendar, ChevronDown, ChevronUp, MapPin, RefreshCw, Download, Upload, Send } from 'lucide-react';
+import { Save, TrendingUp, Facebook, BarChart3, Eye, CheckCircle, AlertCircle, ExternalLink, Copy, Check, Search, Link2, FileText, Calendar, ChevronDown, ChevronUp, MapPin, RefreshCw, Download, Upload, Send, Share2, Rss, Mail } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import MarketingSecondaryNav from '../../components/admin/MarketingSecondaryNav';
+import SocialPosting from './SocialPosting';
+import NewsletterManagement from './NewsletterManagement';
+import EmailManagement from './EmailManagement';
 import { supabase } from '../../services/supabaseService';
 import MetaPixelService from '../../services/metaPixelService';
 import EmailService from '../../services/emailService';
 import { generateSlug } from '../../utils/slugUtils';
+
+export type MainMarketingTab = 'marketing' | 'social-posting' | 'newsletter' | 'email';
 
 const inputCls =
   'h-8 w-full rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900';
@@ -473,6 +478,33 @@ const STATIC_PAGES: { path: string; title: string }[] = [
 ];
 
 const Marketing: React.FC = () => {
+  const [activeMainTab, setActiveMainTab] = useState<MainMarketingTab>('marketing');
+
+  // Sync main tab with URL ?tab= parameter
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam === 'social-posting' || tabParam === 'newsletter' || tabParam === 'email') {
+      setActiveMainTab(tabParam as MainMarketingTab);
+    } else if (tabParam === 'marketing' || tabParam === 'seo') {
+      setActiveMainTab('marketing');
+    }
+  }, []);
+
+  const handleMainTabChange = (tab: MainMarketingTab) => {
+    setActiveMainTab(tab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (tab === 'marketing') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', tab);
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
+
   const [activeSubTab, setActiveSubTab] = useState<'tracking' | 'seo' | 'keyword_tracking' | 'seo_daily' | 'email' | 'seo_plan' | 'gmb' | 'urls'>('tracking');
   const [urlsList, setUrlsList] = useState<SiteUrlItem[]>([]);
   const [urlsLoading, setUrlsLoading] = useState(false);
@@ -2307,22 +2339,119 @@ const Marketing: React.FC = () => {
 
   const completedDailyTasks = DAILY_SEO_TASKS.filter((task) => dailyChecklist[task.id]).length;
 
-  if (loading) {
-    return (
-      <AdminLayout title="Marketing" noHeader>
-        <div className="flex flex-col items-center justify-center gap-2 py-16">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900" />
-          <span className="text-[11px] text-gray-500">Loading marketing settings…</span>
-        </div>
-      </AdminLayout>
-    );
-  }
+  const subbarMargin =
+    activeMainTab === 'marketing'
+      ? 'ml-[4.25rem]'
+      : activeMainTab === 'social-posting'
+        ? 'ml-20'
+        : activeMainTab === 'email'
+          ? 'ml-[4.25rem]'
+          : '';
 
   return (
     <AdminLayout title="Marketing" noHeader>
-      <MarketingSecondaryNav activeTab={activeSubTab} onTabChange={setActiveSubTab} />
-      <div className="ml-24 flex flex-1 flex-col overflow-hidden">
-      <div className="space-y-3 px-3 py-4 sm:px-5">
+      {/* ─── Top Glass Command Bar With Integrated Marketing Tabs ─── */}
+      <div className={`sticky top-0 z-40 border-b border-gray-200/80 bg-white/95 px-4 sm:px-6 py-2.5 shadow-xs backdrop-blur-md transition-all duration-150 ${subbarMargin}`}>
+        <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between">
+          {/* Left: Branding & Status */}
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-slate-900 to-slate-700 text-white shadow-sm">
+              {activeMainTab === 'marketing' && <TrendingUp className="h-4 w-4" />}
+              {activeMainTab === 'social-posting' && <Share2 className="h-4 w-4" />}
+              {activeMainTab === 'newsletter' && <Rss className="h-4 w-4" />}
+              {activeMainTab === 'email' && <Mail className="h-4 w-4" />}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-sm sm:text-base font-semibold tracking-tight text-slate-900 leading-tight">
+                  {activeMainTab === 'marketing' && 'Marketing & SEO'}
+                  {activeMainTab === 'social-posting' && 'Social Posting Hub'}
+                  {activeMainTab === 'newsletter' && 'Newsletter Campaigns'}
+                  {activeMainTab === 'email' && 'Email Management'}
+                </h1>
+                <span className="inline-flex items-center gap-1 rounded-full border border-teal-500/20 bg-teal-500/10 px-2 py-0.5 text-[10px] font-medium text-teal-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-pulse" />
+                  Live
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 font-normal">
+                {activeMainTab === 'marketing' && 'Search engine rankings, meta pixels, daily checklists & URL indexing'}
+                {activeMainTab === 'social-posting' && 'Multi-platform social content scheduler, publishing queue & analytics'}
+                {activeMainTab === 'newsletter' && 'Subscriber audiences, campaign broadcasts & broadcast drafts'}
+                {activeMainTab === 'email' && 'System templates, user recipients, SMTP configuration & delivery checks'}
+              </p>
+            </div>
+          </div>
+
+          {/* Center / Right: Top Tab Bar */}
+          <div className="inline-flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-slate-100/90 p-1 shadow-inner overflow-x-auto max-w-full">
+            <button
+              type="button"
+              onClick={() => handleMainTabChange('marketing')}
+              className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all duration-150 cursor-pointer whitespace-nowrap ${
+                activeMainTab === 'marketing'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <TrendingUp className="h-3.5 w-3.5" />
+              <span>Marketing & SEO</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleMainTabChange('social-posting')}
+              className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all duration-150 cursor-pointer whitespace-nowrap ${
+                activeMainTab === 'social-posting'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              <span>Social Posting</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleMainTabChange('newsletter')}
+              className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all duration-150 cursor-pointer whitespace-nowrap ${
+                activeMainTab === 'newsletter'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <Rss className="h-3.5 w-3.5" />
+              <span>Newsletter</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleMainTabChange('email')}
+              className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all duration-150 cursor-pointer whitespace-nowrap ${
+                activeMainTab === 'email'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <Mail className="h-3.5 w-3.5" />
+              <span>Email Management</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Content Body ─── */}
+      {activeMainTab === 'marketing' && (
+        loading ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-16">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900" />
+            <span className="text-[11px] text-gray-500">Loading marketing settings…</span>
+          </div>
+        ) : (
+          <>
+            <MarketingSecondaryNav activeTab={activeSubTab} onTabChange={setActiveSubTab} />
+            <div className="ml-[4.25rem] flex flex-1 flex-col overflow-hidden">
+              <div className="space-y-3 px-3 py-4 sm:px-5">
 
         {message && (
           <div
@@ -4207,6 +4336,13 @@ const Marketing: React.FC = () => {
           </div>
         </div>
       )}
+          </>
+        )
+      )}
+
+      {activeMainTab === 'social-posting' && <SocialPosting embedMode={true} />}
+      {activeMainTab === 'newsletter' && <NewsletterManagement embedMode={true} />}
+      {activeMainTab === 'email' && <EmailManagement embedMode={true} />}
     </AdminLayout>
   );
 };

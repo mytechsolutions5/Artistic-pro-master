@@ -277,7 +277,11 @@ const PLATFORM_ANALYTICS: {
   { id: 'linkedin', label: 'LinkedIn', Icon: Building2, textClass: 'text-blue-800', barClass: 'bg-blue-800' },
 ];
 
-const SocialPosting: React.FC = () => {
+export interface SocialPostingProps {
+  embedMode?: boolean;
+}
+
+const SocialPosting: React.FC<SocialPostingProps> = ({ embedMode = false }) => {
   const [activeTab, setActiveTab] = useState<SocialPostingTabId>('compose');
   const [composeMode, setComposeMode] = useState<'write' | 'preview'>('write');
   const [body, setBody] = useState('');
@@ -1465,14 +1469,14 @@ const SocialPosting: React.FC = () => {
     </div>
   );
 
-  return (
-    <AdminLayout title="Multi-platform social media posting" noHeader>
+  const pageContent = (
+    <>
       <SocialPostingSecondaryNav
         activeTab={activeTab}
         onTabChange={setActiveTab}
         queueCount={queue.length}
       />
-      <div className="flex-1 overflow-auto ml-24 min-h-0">
+      <div className="flex-1 overflow-auto ml-20 min-h-0">
         <div className="p-5 space-y-6">
           {toast && (
             <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-gray-200 bg-gray-900 px-4 py-2 text-sm text-white shadow-lg sm:left-auto sm:right-8 sm:translate-x-0">
@@ -1513,6 +1517,16 @@ const SocialPosting: React.FC = () => {
           {activeTab === 'apis' && apisPanel}
         </div>
       </div>
+    </>
+  );
+
+  if (embedMode) {
+    return <div className="relative">{pageContent}</div>;
+  }
+
+  return (
+    <AdminLayout title="Social Posting" noHeader={true}>
+      <div className="relative">{pageContent}</div>
     </AdminLayout>
   );
 };

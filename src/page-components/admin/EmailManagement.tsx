@@ -122,7 +122,11 @@ const interpolateTemplate = (html: string, mockData: Record<string, any>) => {
   return result;
 };
 
-const EmailManagement: React.FC = () => {
+export interface EmailManagementProps {
+  embedMode?: boolean;
+}
+
+const EmailManagement: React.FC<EmailManagementProps> = ({ embedMode = false }) => {
   const [emailContent, setEmailContent] = useState({
     subject: '',
     message: '',
@@ -1072,7 +1076,7 @@ const EmailManagement: React.FC = () => {
             <h3 className="mb-1 text-[11px] font-semibold text-gray-900">Env vars (reference)</h3>
             <div className="space-y-0.5 font-mono text-[10px]">
               {[
-                'RESEND_API_KEY=re_JUa3mU3w_8o6KQewbzZCq7RnzCM8nibSc',
+                'RESEND_API_KEY=re_your_api_key_here',
                 'VITE_SMTP_HOST=smtp.hostinger.com',
                 'VITE_SMTP_PORT=465',
                 'VITE_SMTP_SECURE=true',
@@ -1091,8 +1095,8 @@ const EmailManagement: React.FC = () => {
     </div>
   );
 
-  return (
-    <AdminLayout title="Email Management" noHeader={true}>
+  const pageContent = (
+    <div className="relative">
       {/* Secondary Navigation - Vertical Sidebar */}
       <EmailSecondaryNav 
         activeTab={activeTab}
@@ -1105,7 +1109,7 @@ const EmailManagement: React.FC = () => {
         }}
       />
       
-      <div className="ml-[9.25rem] flex flex-1 flex-col overflow-hidden">
+      <div className="ml-[4.25rem] flex flex-1 flex-col overflow-hidden">
         <div className="p-3">
           <div className="mb-2">
             <h2 className="text-base font-semibold text-gray-900">Email</h2>
@@ -1114,6 +1118,16 @@ const EmailManagement: React.FC = () => {
           {renderTabContent()}
         </div>
       </div>
+    </div>
+  );
+
+  if (embedMode) {
+    return pageContent;
+  }
+
+  return (
+    <AdminLayout title="Email Management" noHeader={true}>
+      {pageContent}
     </AdminLayout>
   );
 };

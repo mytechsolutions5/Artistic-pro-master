@@ -5,7 +5,7 @@ import { Link, useLocation, useNavigate } from '@/src/compat/router';
 import { Search, ShoppingCart, User, Menu, X, Heart, Clock, TrendingUp, Settings } from 'lucide-react';
 import { CartManager } from '../services/orderService';
 import { useAuth } from '../contexts/AuthContext';
-import { isAdmin } from '../utils/adminUtils';
+import { isAdmin, canAccessAdmin } from '../utils/adminUtils';
 import { useCategories } from '../contexts/CategoryContext';
 import { NavigationVisibilityService, type NavigationVisibilitySettings } from '../services/navigationVisibilityService';
 
@@ -473,7 +473,7 @@ const Header: React.FC = () => {
                 F&B
               </Link>
             )}
-            {isAdmin(user?.email) && (
+            {canAccessAdmin(user) && (
               <Link 
                 to="/admin" 
                 onClick={() => setOptimisticPath('/admin')}
@@ -766,7 +766,7 @@ const Header: React.FC = () => {
                   <span className="font-sans font-normal uppercase text-sm">F&B</span>
                 </Link>
               )}
-              {isAdmin(user?.email) && (
+              {canAccessAdmin(user) && (
                 <Link
                   to="/admin"
                   className={`flex items-center py-2 font-sans font-normal transition-colors ${isActive('/admin') ? 'bg-gray-100 text-black px-2 rounded-md' : 'text-black hover:text-gray-600'}`}

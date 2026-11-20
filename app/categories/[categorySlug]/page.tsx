@@ -147,50 +147,18 @@ export default async function CategoryPage({ params }: Props) {
           }}
         />
       )}
-      {/* Server-rendered content for Google */}
+      {/* Category Header for SEO & Users */}
       {finalCategory && (
-        <noscript>
-          <main style={{ maxWidth: '72rem', margin: '0 auto', padding: '1rem', fontFamily: 'Inter, sans-serif' }}>
-            <h1>{finalCategory.name}</h1>
-            {finalCategory.description && <p>{finalCategory.description}</p>}
-
-            {products && products.length > 0 && (
-              <section>
-                <h2>{finalCategory.name} Artworks</h2>
-                <ul>
-                  {products.map((p) => {
-                    const primaryCatSlug = Array.isArray(p.categories) && p.categories.length > 0 ? generateSlug(p.categories[0]) : categorySlug;
-                    return (
-                      <li key={p.id}>
-                        <a href={`/categories/${primaryCatSlug}/${p.slug || generateSlug(p.title)}`}>
-                          {p.title} — ₹{p.price}
-                          {p.description && ` — ${p.description.substring(0, 120)}`}
-                        </a>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            )}
-
-            {(() => {
-              const explainer = categorySlug ? getCategoryExplainer(categorySlug) : null;
-              if (!explainer) return null;
-              return (
-                <section style={{ marginTop: '2rem', marginBottom: '2rem', padding: '1.5rem', backgroundColor: '#fafafa', borderRadius: '0.5rem', border: '1px solid #eaeaea' }}>
-                  <h2>{explainer.title}</h2>
-                  <p>{explainer.description}</p>
-                  <h3>{explainer.benefitsTitle}</h3>
-                  <ul>
-                    {explainer.benefits.map((benefit, i) => (
-                      <li key={i}>{benefit}</li>
-                    ))}
-                  </ul>
-                </section>
-              );
-            })()}
-          </main>
-        </noscript>
+        <header className="max-w-7xl mx-auto px-4 pt-6 pb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight capitalize font-sans">
+            {finalCategory.name} Digital Art Prints
+          </h1>
+          {finalCategory.description && (
+            <p className="mt-2 text-sm sm:text-base text-gray-600 max-w-3xl leading-relaxed font-sans font-normal">
+              {finalCategory.description}
+            </p>
+          )}
+        </header>
       )}
 
       {/* Full interactive React page */}
@@ -199,6 +167,24 @@ export default async function CategoryPage({ params }: Props) {
         initialCategory={finalCategory}
         initialProducts={products || []}
       />
+
+      {/* Category Explainer and Guide Section for Search Relevance */}
+      {(() => {
+        const explainer = categorySlug ? getCategoryExplainer(categorySlug) : null;
+        if (!explainer) return null;
+        return (
+          <section className="max-w-7xl mx-auto px-4 py-8 my-8 bg-gray-50 border border-gray-100 rounded-2xl font-sans">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">{explainer.title}</h2>
+            <p className="text-sm text-gray-600 mb-4 leading-relaxed">{explainer.description}</p>
+            <h3 className="text-sm font-semibold text-gray-800 mb-2">{explainer.benefitsTitle}</h3>
+            <ul className="list-disc pl-5 text-xs sm:text-sm text-gray-600 space-y-1">
+              {explainer.benefits.map((benefit, i) => (
+                <li key={i}>{benefit}</li>
+              ))}
+            </ul>
+          </section>
+        );
+      })()}
     </>
   );
 }

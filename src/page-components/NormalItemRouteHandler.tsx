@@ -27,10 +27,16 @@ const NormalItemRouteHandler: React.FC<NormalItemRouteHandlerProps> = ({
 }) => {
   const { categorySlug } = useParams<{ categorySlug: string }>();
   const { adminProducts, loading: productsLoading } = useProducts();
-  const [itemType, setItemType] = useState<'normal' | 'fb' | 'category' | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [itemType, setItemType] = useState<'normal' | 'fb' | 'category' | null>(isCategoryPage ? 'category' : null);
+  const [loading, setLoading] = useState(!isCategoryPage);
 
   useEffect(() => {
+    if (isCategoryPage) {
+      setItemType('category');
+      setLoading(false);
+      return;
+    }
+
     const checkItemType = async () => {
       if (!categorySlug) {
         setItemType('category');
@@ -84,7 +90,7 @@ const NormalItemRouteHandler: React.FC<NormalItemRouteHandlerProps> = ({
   }, [categorySlug, adminProducts, productsLoading]);
 
   // Show loading state
-  if (loading || (productsLoading && !initialProducts)) {
+  if ((loading && !isCategoryPage) || (productsLoading && !initialProducts && !isCategoryPage)) {
     return <CategoryPageSkeleton showFilters={false} productCount={8} />;
   }
 
